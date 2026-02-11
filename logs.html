@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INSTANT UNDO | Activity Ledger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #050505;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass {
+            background: rgba(15, 15, 15, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .neon-bg-emerald {
+            background: #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .neon-text-emerald {
+            color: #10b981;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+
+    <!-- Navigation -->
+    <nav
+        class="fixed top-0 left-0 w-full z-50 px-8 py-6 flex justify-between items-center glass border-b border-white/5">
+        <div class="flex items-center gap-4 cursor-pointer" onclick="window.location.href='index.html'">
+            <div class="w-10 h-10 neon-bg-emerald rounded flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-black tracking-tighter italic">INSTANT UNDO</h1>
+        </div>
+        <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <a href="index.html" class="hover:text-emerald-400 transition-colors">Dashboard</a>
+            <a href="logs.html" class="text-emerald-400">Activity Logs</a>
+            <a href="apps.html" class="hover:text-emerald-400 transition-colors">Connected Apps</a>
+            <button id="connectionBtn"
+                class="px-4 py-2 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-500/10 transition-all font-black">
+                CONNECTING...
+            </button>
+        </div>
+    </nav>
+
+    <main class="pt-32 px-8 max-w-7xl mx-auto pb-20">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+            <div class="max-w-xl">
+                <h2 class="text-4xl font-black italic tracking-tighter text-white uppercase">Activity Logs</h2>
+                <p class="text-emerald-500 mono text-[10px] mt-2 tracking-[0.4em] uppercase">Universal System-Level
+                    Interception History</p>
+                <p class="text-slate-500 text-sm mt-4 leading-relaxed">
+                    Complete record of all intercepted, reversed, and committed actions.
+                </p>
+            </div>
+
+            <div class="flex flex-col items-end gap-3 w-full md:w-auto">
+                <div class="flex gap-2 w-full">
+                    <input type="text" id="logSearch" placeholder="Search by Action or Platform..."
+                        class="bg-white/5 border border-white/10 rounded px-4 py-3 text-xs mono focus:outline-none focus:border-emerald-500/50 w-full md:w-80 text-white">
+                    <button onclick="purgeLogs()"
+                        class="px-6 py-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase rounded hover:bg-rose-500/20 transition-all">Purge</button>
+                </div>
+                <div class="flex items-center gap-4">
+                    <p class="text-[9px] font-black text-slate-600 uppercase tracking-widest">Storage Status: <span
+                            id="storageStatus" class="text-emerald-500">Connecting...</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="glass p-4 rounded-lg flex items-center gap-4">
+                <div class="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-emerald-500" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                </div>
+                <div>
+                    <p id="statReversed" class="text-2xl font-black text-emerald-500">0</p>
+                    <p class="text-[9px] text-slate-500 uppercase tracking-wider">Reversed</p>
+                </div>
+            </div>
+            <div class="glass p-4 rounded-lg flex items-center gap-4">
+                <div class="w-10 h-10 bg-rose-500/10 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-rose-500" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </svg>
+                </div>
+                <div>
+                    <p id="statCommitted" class="text-2xl font-black text-rose-500">0</p>
+                    <p class="text-[9px] text-slate-500 uppercase tracking-wider">Committed</p>
+                </div>
+            </div>
+            <div class="glass p-4 rounded-lg flex items-center gap-4">
+                <div class="w-10 h-10 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-500" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                </div>
+                <div>
+                    <p id="statPending" class="text-2xl font-black text-amber-500">0</p>
+                    <p class="text-[9px] text-slate-500 uppercase tracking-wider">Pending</p>
+                </div>
+            </div>
+            <div class="glass p-4 rounded-lg flex items-center gap-4">
+                <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                </div>
+                <div>
+                    <p id="statTotal" class="text-2xl font-black text-blue-500">0</p>
+                    <p class="text-[9px] text-slate-500 uppercase tracking-wider">Total Logged</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Logs Table -->
+        <div id="logsTable" class="glass rounded-lg overflow-hidden border-white/5">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-black/20 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">
+                        <tr>
+                            <th class="px-8 py-4">Serial_ID</th>
+                            <th class="px-8 py-4">Action_Type</th>
+                            <th class="px-8 py-4">Source_App</th>
+                            <th class="px-8 py-4">Time_Logged</th>
+                            <th class="px-8 py-4 text-right">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fullLogBody" class="text-sm mono divide-y divide-white/5">
+                        <!-- Dynamically Populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden py-40 text-center">
+            <div class="w-16 h-16 border border-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-slate-700" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <p class="text-slate-500 text-xs font-black uppercase tracking-widest">No Interaction History Found</p>
+        </div>
+    </main>
+
+    <script>
+        const SERVER_URL = 'http://localhost:3000';
+        let socket = null;
+        let allLogs = [];
+
+        // Initialize Socket.io connection
+        function initSocket() {
+            try {
+                socket = io(SERVER_URL);
+
+                socket.on('connect', () => {
+                    console.log('🔌 Connected to Elvion Server');
+                    document.getElementById('connectionBtn').textContent = 'SECURE_STORAGE: ON';
+                    document.getElementById('storageStatus').textContent = 'Encrypted';
+                });
+
+                socket.on('disconnect', () => {
+                    document.getElementById('connectionBtn').textContent = 'OFFLINE';
+                    document.getElementById('storageStatus').textContent = 'Disconnected';
+                });
+
+                // Handle initial data from server
+                socket.on('init', (data) => {
+                    console.log('📊 Initial data received:', data);
+                    if (data.logs) {
+                        allLogs = data.logs;
+                        renderLogs();
+                    }
+                    if (data.stats) {
+                        updateStats(data.stats);
+                    }
+                });
+
+                // Handle new action resolved - add to log list
+                socket.on('action:resolved', (data) => {
+                    console.log('✅ Action resolved:', data);
+                    if (data.log) {
+                        allLogs.unshift(data.log);
+                        renderLogs();
+                    }
+                    // Fetch fresh stats
+                    fetchStats();
+                });
+
+                // Handle logs cleared
+                socket.on('logs:cleared', () => {
+                    allLogs = [];
+                    renderLogs();
+                    fetchStats();
+                });
+
+            } catch (error) {
+                console.error('Failed to connect:', error);
+                document.getElementById('connectionBtn').textContent = 'OFFLINE';
+                document.getElementById('storageStatus').textContent = 'Error';
+            }
+        }
+
+        async function fetchStats() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/stats`);
+                const data = await response.json();
+                if (data.success) {
+                    updateStats(data.stats);
+                }
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('statReversed').textContent = stats.mistakesPrevented || 0;
+            document.getElementById('statCommitted').textContent = stats.actionsCommitted || 0;
+            document.getElementById('statPending').textContent = stats.pendingCount || 0;
+            document.getElementById('statTotal').textContent = stats.totalActions || 0;
+        }
+
+        function renderLogs() {
+            const tbody = document.getElementById('fullLogBody');
+            const emptyState = document.getElementById('emptyState');
+            const tableContainer = document.getElementById('logsTable');
+
+            if (allLogs.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+
+            tbody.innerHTML = allLogs.map(log => `
+                <tr class="hover:bg-white/5 transition-colors group border-b border-white/5">
+                    <td class="px-8 py-6 text-slate-500 font-bold italic text-xs">#${log.id}</td>
+                    <td class="px-8 py-6 font-bold text-slate-200">${log.label}</td>
+                    <td class="px-8 py-6">
+                        <span class="px-2 py-1 rounded bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-tighter">
+                            ${log.platform}
+                        </span>
+                    </td>
+                    <td class="px-8 py-6 text-slate-500">${log.timestamp || log.time}</td>
+                    <td class="px-8 py-6 text-right">
+                        <span class="${log.status === 'REVERSED' ? 'neon-text-emerald' : 'text-rose-500'} font-black uppercase italic tracking-widest text-xs underline underline-offset-8 decoration-current/20">
+                            ${log.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function purgeLogs() {
+            if (confirm("DANGER: This will permanently erase all intercepted action logs from the system. Continue?")) {
+                try {
+                    await fetch(`${SERVER_URL}/api/logs`, { method: 'DELETE' });
+                    // Server will emit logs:cleared
+                } catch (error) {
+                    console.error('Failed to purge logs:', error);
+                }
+            }
+        }
+
+        // Search filter
+        document.getElementById('logSearch').addEventListener('input', function (e) {
+            const term = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#fullLogBody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+
+        // Initialize
+        window.onload = () => {
+            console.log('📋 Activity Ledger initializing...');
+            initSocket();
+        };
+    </script>
+</body>
+
+</html>

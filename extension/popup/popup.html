@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>INSTANT UNDO</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 320px;
+            min-height: 400px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(180deg, #0a0a0a, #050505);
+            color: #e2e8f0;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            padding: 20px;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .logo {
+            width: 36px;
+            height: 36px;
+            background: #10b981;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .logo svg {
+            width: 20px;
+            height: 20px;
+            stroke: black;
+            fill: none;
+        }
+        
+        .title {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            font-style: italic;
+        }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #10b981;
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 15px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            font-style: italic;
+        }
+        
+        .stat-value.green { color: #10b981; }
+        .stat-value.amber { color: #f59e0b; }
+        
+        .stat-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-top: 4px;
+            font-weight: 700;
+        }
+        
+        .section {
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .section-title {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+        
+        .recent-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .recent-label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .recent-platform {
+            font-size: 8px;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+        
+        .recent-status {
+            font-size: 8px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        
+        .recent-status.reversed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        
+        .recent-status.committed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #64748b;
+            font-size: 11px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #10b981;
+            border: none;
+            border-radius: 8px;
+            color: black;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.3);
+        }
+        
+        .footer {
+            padding: 15px;
+            text-align: center;
+            font-size: 8px;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-top">
+            <div class="logo">
+                <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <span class="title">INSTANT UNDO</span>
+        </div>
+        <div class="status-badge">
+            <span class="status-dot"></span>
+            <span id="statusText">Protection Active</span>
+        </div>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value green" id="preventedCount">0</div>
+            <div class="stat-label">Prevented</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value amber" id="totalCount">0</div>
+            <div class="stat-label">Total Actions</div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">Recent Interceptions</div>
+        <div id="recentList">
+            <div class="empty-state">No recent interceptions</div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <button class="btn" id="openDashboard">Open Full Dashboard</button>
+    </div>
+    
+    <div class="footer">
+        Elvion Guard Engine v2.0
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

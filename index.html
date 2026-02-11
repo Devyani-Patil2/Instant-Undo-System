@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INSTANT UNDO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #050505;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(15, 15, 15, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Neon Accents */
+        .neon-border-emerald {
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+        }
+
+        .neon-text-emerald {
+            color: #10b981;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        .neon-bg-emerald {
+            background: #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .neon-border-amber {
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.1);
+        }
+
+        .neon-text-amber {
+            color: #f59e0b;
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+
+    <!-- Navigation -->
+    <nav
+        class="fixed top-0 left-0 w-full z-50 px-8 py-6 flex justify-between items-center glass border-b border-white/5">
+        <div class="flex items-center gap-4">
+            <div
+                class="w-10 h-10 neon-bg-emerald rounded flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black tracking-tighter italic">INSTANT UNDO <span id="connectionStatus"
+                        class="text-emerald-500 font-normal not-italic text-sm mono ml-2"></span>
+                </h1>
+            </div>
+        </div>
+        <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <a href="logs.html" class="hover:text-emerald-400 transition-colors">Activity Logs</a>
+            <a href="apps.html" class="hover:text-emerald-400 transition-colors">Connected Apps</a>
+            <button id="protectionBtn"
+                class="px-4 py-2 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-500/10 transition-all font-black">
+                PROTECTION: ACTIVE
+            </button>
+        </div>
+    </nav>
+
+    <main class="pt-32 px-8 max-w-7xl mx-auto grid grid-cols-12 gap-8 pb-20">
+
+        <!-- Sidebar Controls -->
+        <aside class="col-span-12 lg:col-span-3 space-y-6">
+            <div class="glass p-6 rounded-lg neon-border-emerald">
+                <h3 class="text-xs font-black uppercase text-emerald-500 mb-6 flex items-center gap-2">
+                    <span class="w-2 h-2 neon-bg-emerald rounded-full"></span> Simulation Terminal
+                </h3>
+                <div class="space-y-4">
+                    <button
+                        onclick="simulateAction('email', 'Email Sent', {to: 'legal-team@global.com', subject: 'Confidential Report'})"
+                        class="w-full text-left p-4 rounded bg-white/5 border border-white/5 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Gmail Adapter</p>
+                        <p class="text-sm font-bold flex justify-between items-center text-slate-200">
+                            Critical Email <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                        </p>
+                    </button>
+                    <button
+                        onclick="simulateAction('github', 'Force Code Push', {branch: 'master --force', type: 'push', force: true})"
+                        class="w-full text-left p-4 rounded bg-white/5 border border-white/5 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">GitHub API</p>
+                        <p class="text-sm font-bold flex justify-between items-center text-slate-200">
+                            Force Push <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                        </p>
+                    </button>
+                    <button
+                        onclick="simulateAction('file', 'Data Deletion', {path: '/root/production', type: 'folder'})"
+                        class="w-full text-left p-4 rounded bg-white/5 border border-white/5 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">File System</p>
+                        <p class="text-sm font-bold flex justify-between items-center text-slate-200">
+                            Purge Folder <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                        </p>
+                    </button>
+                    <button
+                        onclick="simulateAction('form', 'Account Deletion', {formName: 'Delete Account', action: 'delete', url: 'example.com'})"
+                        class="w-full text-left p-4 rounded bg-white/5 border border-white/5 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group">
+                        <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Form Submission</p>
+                        <p class="text-sm font-bold flex justify-between items-center text-slate-200">
+                            Delete Account <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                        </p>
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass p-6 rounded-lg border-white/5">
+                <h3 class="text-xs font-black uppercase text-slate-500 mb-4 tracking-tighter">Engine Parameters</h3>
+                <label class="text-[10px] font-bold text-slate-400 block mb-2 uppercase">GRACE WINDOW (SECONDS)</label>
+                <div class="flex items-center gap-4">
+                    <input id="graceRange" type="range" min="5" max="30" value="15"
+                        class="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                    <span id="graceVal" class="text-emerald-400 font-bold mono">15s</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard Content -->
+        <div class="col-span-12 lg:col-span-9 space-y-8">
+
+            <!-- Hero Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass p-8 rounded-lg relative overflow-hidden group border-emerald-500/10">
+                    <div
+                        class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity text-emerald-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="m16 12-4-4-4 4" />
+                            <path d="M12 16V8" />
+                        </svg>
+                    </div>
+                    <p class="text-xs font-black text-slate-500 uppercase mb-2">Mistakes Prevented</p>
+                    <p id="statPrevented" class="text-5xl font-black neon-text-emerald italic">0</p>
+                    <div class="flex gap-1 mt-3">
+                        <div class="h-1 w-6 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <div class="h-1 w-6 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <div class="h-1 w-6 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <div class="h-1 w-6 bg-white/10"></div>
+                    </div>
+                </div>
+                <div class="glass p-8 rounded-lg relative overflow-hidden group border-white/5">
+                    <p class="text-xs font-black text-slate-500 uppercase mb-2">Interception Latency</p>
+                    <p class="text-5xl font-black text-white italic">0.04<span class="text-xl">ms</span></p>
+                    <p class="text-[10px] text-emerald-500/80 mt-2 mono font-bold tracking-widest">STATUS: INSTANT</p>
+                </div>
+                <div class="glass p-8 rounded-lg relative overflow-hidden group border-amber-500/10">
+                    <p class="text-xs font-black text-slate-500 uppercase mb-2">Total Actions</p>
+                    <p id="statTotal" class="text-5xl font-black neon-text-amber italic">0</p>
+                    <div class="flex gap-1 mt-3">
+                        <div class="h-1 w-6 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                        <div class="h-1 w-6 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+                        <div class="h-1 w-6 bg-white/10"></div>
+                        <div class="h-1 w-6 bg-white/10"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Stream (Last 7 logs) -->
+            <div class="glass rounded-lg overflow-hidden border-white/5">
+                <div class="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                    <div>
+                        <h2 class="text-lg font-bold tracking-tight text-white uppercase italic">Activity Stream</h2>
+                        <p class="text-xs text-slate-500 mono">Recent Interceptions</p>
+                    </div>
+                    <div
+                        class="flex items-center gap-3 bg-black/40 px-3 py-1.5 rounded-full border border-emerald-500/20">
+                        <span id="liveIndicator"
+                            class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                        <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">System Monitor:
+                            Live</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-black/20 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">
+                            <tr>
+                                <th class="px-8 py-4">Serial_ID</th>
+                                <th class="px-8 py-4">Action_Type</th>
+                                <th class="px-8 py-4">Source_App</th>
+                                <th class="px-8 py-4">Time_Logged</th>
+                                <th class="px-8 py-4 text-right">Result</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logBody" class="text-sm mono">
+                            <tr class="border-b border-white/5">
+                                <td colspan="5" class="px-8 py-12 text-center text-slate-600 text-xs">
+                                    Waiting for interceptions...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FLOATING INTERCEPTION OVERLAY -->
+    <div id="interceptorOverlay"
+        class="fixed inset-0 bg-black/90 backdrop-blur-xl z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+        <div
+            class="max-w-md w-full glass p-1 rounded-lg neon-border-amber relative shadow-[0_0_100px_rgba(245,158,11,0.15)]">
+
+            <!-- Visual Countdown -->
+            <div
+                class="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full border border-amber-500/20 flex items-center justify-center bg-black">
+                <div
+                    class="w-20 h-20 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin transition-all">
+                </div>
+                <div id="countdownText" class="absolute text-2xl font-black neon-text-amber italic tracking-tighter">15
+                </div>
+            </div>
+
+            <div class="p-8 text-center mt-10">
+                <div class="flex justify-center gap-1 mb-6">
+                    <div class="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                </div>
+                <p class="text-[10px] font-black tracking-[0.4em] text-amber-500 uppercase mb-3">Interception Protocol
+                </p>
+                <h3 id="interceptLabel" class="text-3xl font-black text-white italic mb-2 tracking-tighter uppercase">
+                    Action Paused</h3>
+                <p id="interceptMeta"
+                    class="text-slate-400 text-xs mb-10 mono bg-black/40 p-4 rounded-lg italic border border-white/5 leading-relaxed">
+                    METADATA_PENDING</p>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <button id="undoBtn"
+                        class="group relative overflow-hidden bg-amber-500 py-5 rounded-lg font-black text-black tracking-widest uppercase text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_20px_rgba(245,158,11,0.3)]">
+                        <span class="relative z-10">Prevent Mistake (Undo)</span>
+                        <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity">
+                        </div>
+                    </button>
+                    <button id="commitBtn"
+                        class="text-slate-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.3em] py-2">
+                        I am sure, continue execution
+                    </button>
+                </div>
+            </div>
+
+            <div
+                class="px-8 py-4 bg-white/5 text-[9px] font-black flex justify-center uppercase tracking-widest border-t border-white/5">
+                <span class="text-amber-500">Action paused — review before it's too late</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Toast -->
+    <div id="toast"
+        class="fixed bottom-10 right-10 p-5 glass neon-border-emerald rounded-xl hidden z-[110] transform translate-y-20 transition-all duration-300 shadow-2xl">
+        <div class="flex items-center gap-4">
+            <div id="toastIcon"
+                class="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center text-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12" />
+                </svg>
+            </div>
+            <div>
+                <p id="toastTitle" class="text-sm font-black text-white uppercase italic tracking-wider">Action
+                    Prevented</p>
+                <p id="toastBody" class="text-xs text-slate-500 mono">Threat neutralized successfully.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // SOCKET.IO CONNECTION
+        // ==========================================
+        const SERVER_URL = 'http://localhost:3000';
+        const MAX_DISPLAY_LOGS = 7; // Only show 7 recent logs on main page
+
+        let socket = null;
+        let displayTimer = null; // UI timer only for display
+        let timeLeft = 0;
+        let currentAction = null;
+        let allLogs = []; // Store all logs
+
+        const graceRange = document.getElementById('graceRange');
+        const graceVal = document.getElementById('graceVal');
+
+        // Initialize Socket.io connection
+        function initSocket() {
+            try {
+                // Get userId from URL for filtering
+                const urlParams = new URLSearchParams(window.location.search);
+                const userId = urlParams.get('userId');
+
+                // Connect with userId identification
+                socket = io(SERVER_URL, {
+                    query: { userId: userId || '' }
+                });
+
+                socket.on('connect', () => {
+                    console.log(`🔌 Connected to Elvion Server (User: ${userId || 'Anonymous'})`);
+                    document.getElementById('connectionStatus').textContent = '• CONNECTED';
+                    document.getElementById('protectionBtn').textContent = 'PROTECTION: ACTIVE';
+                    document.getElementById('liveIndicator').classList.add('animate-pulse');
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('❌ Disconnected from server');
+                    document.getElementById('connectionStatus').textContent = '• OFFLINE';
+                    document.getElementById('protectionBtn').textContent = 'PROTECTION: OFFLINE';
+                    document.getElementById('liveIndicator').classList.remove('animate-pulse');
+                });
+
+                // Handle initial data from server
+                socket.on('init', (data) => {
+                    console.log('📊 Initial data received:', data);
+                    if (data.stats) updateStats(data.stats);
+                    if (data.logs) {
+                        allLogs = data.logs;
+                        renderLogs();
+                    }
+                });
+
+                // Handle new interceptions - show overlay
+                socket.on('action:intercepted', (action) => {
+                    console.log('⚡ Action intercepted:', action);
+                    showInterceptOverlay(action);
+                    fetchStats(); // Update pending count
+                });
+
+                // Handle action resolution from server - update UI
+                socket.on('action:resolved', (data) => {
+                    console.log('✅ Action resolved:', data);
+                    hideInterceptOverlay();
+
+                    // Add log to our local array and re-render
+                    if (data.log) {
+                        allLogs.unshift(data.log);
+                        renderLogs();
+                    }
+
+                    showToast(data.status);
+                    fetchStats();
+                });
+
+                // Handle logs cleared
+                socket.on('logs:cleared', () => {
+                    allLogs = [];
+                    renderLogs();
+                    fetchStats();
+                });
+
+            } catch (error) {
+                console.error('Failed to connect:', error);
+                document.getElementById('connectionStatus').textContent = '• OFFLINE';
+            }
+        }
+
+        // Update range display and save to server
+        graceRange.addEventListener('input', (e) => {
+            graceVal.innerText = e.target.value + 's';
+        });
+        graceRange.addEventListener('change', (e) => {
+            // Save to server so extension picks it up
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+
+            fetch(`${SERVER_URL}/api/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    graceWindow: parseInt(e.target.value),
+                    userId: userId
+                })
+            }).then(() => {
+                console.log('⏱️ Grace window saved:', e.target.value + 's');
+            }).catch(err => console.error('Failed to save grace window:', err));
+        });
+
+        // ==========================================
+        // SIMULATION FUNCTIONS
+        // ==========================================
+
+        async function simulateAction(type, label, metadata) {
+            const graceWindow = parseInt(graceRange.value);
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+
+            try {
+                const response = await fetch(`${SERVER_URL}/api/action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, label, metadata, graceWindow, userId })
+                });
+
+                const result = await response.json();
+                console.log('Action created:', result);
+                // Server will emit 'action:intercepted' which will show overlay
+            } catch (error) {
+                console.error('Failed to create action:', error);
+                showToast('ERROR');
+            }
+        }
+
+        // ==========================================
+        // INTERCEPTION OVERLAY
+        // ==========================================
+
+        function showInterceptOverlay(action) {
+            const overlay = document.getElementById('interceptorOverlay');
+            currentAction = action;
+            timeLeft = action.graceWindow || 15;
+
+            document.getElementById('interceptLabel').innerText = action.label.toUpperCase();
+            document.getElementById('interceptMeta').innerText = formatMetadata(action.type, action.metadata);
+            document.getElementById('countdownText').innerText = timeLeft;
+
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                overlay.classList.add('opacity-100');
+                overlay.classList.remove('opacity-0');
+            }, 10);
+
+            // Start DISPLAY-ONLY timer (server handles actual timeout)
+            clearInterval(displayTimer);
+            displayTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('countdownText').innerText = Math.max(0, timeLeft);
+                // Don't auto-commit here - let server handle it
+            }, 1000);
+        }
+
+        function hideInterceptOverlay() {
+            clearInterval(displayTimer);
+            currentAction = null;
+            const overlay = document.getElementById('interceptorOverlay');
+            overlay.classList.remove('opacity-100');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+
+        function formatMetadata(type, metadata) {
+            if (!metadata) return 'No details available';
+            if (type === 'email' || type === 'gmail') {
+                const parts = [];
+                if (metadata.to) parts.push(`TO: ${metadata.to}`);
+                if (metadata.subject) parts.push(`SUBJECT: ${metadata.subject}`);
+                return parts.join('\n') || 'No details available';
+            }
+            if (type === 'file' || type === 'delete') {
+                return metadata.path || metadata.fileName || 'Unknown file';
+            }
+            if (type === 'github' || type === 'git') {
+                return metadata.branch || metadata.repo || 'Unknown repository';
+            }
+            if (type === 'form' || type === 'submit') {
+                return metadata.formName || metadata.url || 'Unknown form';
+            }
+            return Object.values(metadata).join(', ') || 'No details available';
+        }
+
+        // ==========================================
+        // ACTION RESOLUTION
+        // ==========================================
+
+        async function resolveAction(status) {
+            if (!currentAction) return;
+
+            clearInterval(displayTimer);
+
+            const endpoint = status === 'REVERSED' ? 'undo' : 'commit';
+
+            try {
+                await fetch(`${SERVER_URL}/api/action/${currentAction.id}/${endpoint}`, {
+                    method: 'POST'
+                });
+                // Server will emit 'action:resolved' which updates UI
+            } catch (error) {
+                console.error('Failed to resolve action:', error);
+                hideInterceptOverlay();
+                showToast('ERROR');
+            }
+        }
+
+        // Button event listeners
+        document.getElementById('undoBtn').addEventListener('click', () => resolveAction('REVERSED'));
+        document.getElementById('commitBtn').addEventListener('click', () => resolveAction('COMMITTED'));
+
+        // ==========================================
+        // STATS & LOGS
+        // ==========================================
+
+        async function fetchStats() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const userId = urlParams.get('userId');
+                const response = await fetch(`${SERVER_URL}/api/stats?userId=${encodeURIComponent(userId || '')}`);
+                const data = await response.json();
+                if (data.success) {
+                    updateStats(data.stats);
+                }
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            }
+        }
+
+        async function fetchSettings() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const userId = urlParams.get('userId');
+                const response = await fetch(`${SERVER_URL}/api/settings?userId=${encodeURIComponent(userId || '')}`);
+                const data = await response.json();
+
+                if (data.graceWindow) {
+                    graceRange.value = data.graceWindow;
+                    graceVal.innerText = data.graceWindow + 's';
+                }
+            } catch (error) {
+                console.error('Failed to fetch settings:', error);
+            }
+        }
+
+        function updateStats(stats) {
+            if (stats.mistakesPrevented !== undefined) {
+                document.getElementById('statPrevented').textContent = stats.mistakesPrevented;
+            }
+            if (stats.totalActions !== undefined) {
+                document.getElementById('statTotal').textContent = stats.totalActions;
+            }
+        }
+
+        function renderLogs() {
+            const table = document.getElementById('logBody');
+
+            if (!allLogs || allLogs.length === 0) {
+                table.innerHTML = `
+                    <tr class="border-b border-white/5">
+                        <td colspan="5" class="px-8 py-12 text-center text-slate-600 text-xs">
+                            Waiting for interceptions...
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Show only last 7 logs on main dashboard
+            table.innerHTML = allLogs.slice(0, MAX_DISPLAY_LOGS).map(log => `
+                <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td class="px-8 py-6 text-slate-500 font-bold italic tracking-tighter text-xs">#${log.id}</td>
+                    <td class="px-8 py-6 font-bold text-slate-200">${log.label}</td>
+                    <td class="px-8 py-6"><span class="px-2 py-1 rounded bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-tighter">${log.platform}</span></td>
+                    <td class="px-8 py-6 text-slate-500">${log.timestamp || log.time}</td>
+                    <td class="px-8 py-6 text-right"><span class="${log.status === 'REVERSED' ? 'neon-text-emerald' : 'text-rose-500'} font-black uppercase italic tracking-widest underline underline-offset-4 decoration-current/30">${log.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // ==========================================
+        // TOAST NOTIFICATIONS
+        // ==========================================
+
+        function showToast(status) {
+            const toast = document.getElementById('toast');
+            const title = document.getElementById('toastTitle');
+            const body = document.getElementById('toastBody');
+            const icon = document.getElementById('toastIcon');
+
+            if (status === 'REVERSED') {
+                title.innerText = "Interception Successful";
+                body.innerText = "Action reversed. No data was changed.";
+                icon.className = "w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center text-black shadow-[0_0_20px_rgba(16,185,129,0.5)]";
+            } else if (status === 'COMMITTED') {
+                title.innerText = "Action Executed";
+                body.innerText = "Process has been committed permanently.";
+                icon.className = "w-10 h-10 rounded-lg bg-rose-500 flex items-center justify-center text-black shadow-[0_0_20px_rgba(244,63,94,0.5)]";
+            } else {
+                title.innerText = "Connection Error";
+                body.innerText = "Failed to communicate with server.";
+                icon.className = "w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center text-black shadow-[0_0_20px_rgba(245,158,11,0.5)]";
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.remove('translate-y-20'), 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 4000);
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+
+        window.onload = () => {
+            console.log("⚡ Elvion Cyber-Sentinel Protocol Initializing...");
+            initSocket();
+            fetchSettings();
+        }
+    </script>
+</body>
+
+</html>

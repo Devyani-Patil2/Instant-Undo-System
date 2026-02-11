@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <canvas id="c128" width="128" height="128"></canvas>
+    <canvas id="c48" width="48" height="48"></canvas>
+    <canvas id="c16" width="16" height="16"></canvas>
+    <img id="source" src="icon128.svg" style="display:none">
+
+    <script>
+        window.onload = function () {
+            const img = document.getElementById('source');
+
+            function draw(id, size) {
+                const c = document.getElementById(id);
+                const ctx = c.getContext('2d');
+                ctx.drawImage(img, 0, 0, size, size);
+                return c.toDataURL('image/png').split(',')[1]; // Get base64 data
+            }
+
+            // Wait a bit for SVG to render
+            setTimeout(() => {
+                const b64_128 = draw('c128', 128);
+                const b64_48 = draw('c48', 48);
+                const b64_16 = draw('c16', 16);
+
+                // Output as JSON in body for easy scraping
+                document.body.innerHTML += `<div id="result">${JSON.stringify({
+                    icon128: b64_128,
+                    icon48: b64_48,
+                    icon16: b64_16
+                })}</div>`;
+            }, 500);
+        };
+    </script>
+</body>
+
+</html>

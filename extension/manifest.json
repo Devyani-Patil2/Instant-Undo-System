@@ -1,0 +1,79 @@
+{
+    "manifest_version": 3,
+    "name": "INSTANT UNDO - Elvion Guard",
+    "version": "1.0.0",
+    "description": "Intercept critical digital actions and provide a grace window to undo mistakes before they happen.",
+    "author": "Idea Tribe",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://mail.google.com/*",
+        "https://github.com/*",
+        "https://drive.google.com/*",
+        "https://*.dropbox.com/*",
+        "<all_urls>"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://mail.google.com/*"
+            ],
+            "js": [
+                "content-scripts/overlay.js",
+                "content-scripts/gmail.js"
+            ],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://github.com/*"
+            ],
+            "js": [
+                "content-scripts/overlay.js",
+                "content-scripts/github.js"
+            ],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://drive.google.com/*",
+                "https://*.dropbox.com/*"
+            ],
+            "js": [
+                "content-scripts/overlay.js",
+                "content-scripts/files.js"
+            ],
+            "run_at": "document_idle"
+        },
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "content-scripts/overlay.js",
+                "content-scripts/forms.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        },
+        "default_title": "INSTANT UNDO"
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "instant-undo-server",
+  "version": "1.0.0",
+  "description": "Backend server for INSTANT UNDO - Elvion Guard Engine",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "firebase-admin": "^13.6.1",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.0"
+  }
+}

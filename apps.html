@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INSTANT UNDO | Connected Apps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #050505;
+            color: #e2e8f0;
+        }
+
+        .glass {
+            background: rgba(15, 15, 15, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .neon-bg-emerald {
+            background: #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .neon-text-emerald {
+            color: #10b981;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen pb-20">
+    <nav
+        class="fixed top-0 left-0 w-full z-50 px-8 py-6 flex justify-between items-center glass border-b border-white/5">
+        <div class="flex items-center gap-4 cursor-pointer" onclick="window.location.href='index.html'">
+            <div class="w-10 h-10 neon-bg-emerald rounded flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-black" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-black tracking-tighter italic">INSTANT UNDO</h1>
+        </div>
+        <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <a href="index.html" class="hover:text-emerald-400 transition-colors">Dashboard</a>
+            <a href="logs.html" class="hover:text-emerald-400 transition-colors">Activity Logs</a>
+            <a href="apps.html" class="text-emerald-400">Connected Apps</a>
+        </div>
+    </nav>
+
+    <main class="pt-32 px-8 max-w-7xl mx-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-4xl font-black italic tracking-tighter text-white uppercase">Secured Platforms</h2>
+            <div class="glass px-4 py-2 rounded-lg border border-white/5 flex items-center gap-3">
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Total Protected</span>
+                <span class="text-xl font-black neon-text-emerald">4</span>
+            </div>
+        </div>
+        <p class="text-slate-500 text-sm max-w-2xl mb-12">Platforms currently monitored by the Instant Undo extension
+            for real-time action interception.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Gmail -->
+            <div class="glass p-8 rounded-lg border-white/5 hover:border-emerald-500/30 transition-all group">
+                <div class="flex justify-between items-start mb-6">
+                    <div
+                        class="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
+                        <svg viewBox="0 0 24 24" class="w-7 h-7" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"
+                                fill="#EA4335" />
+                        </svg>
+                    </div>
+                    <span
+                        class="text-[9px] font-black uppercase px-2 py-1 rounded bg-emerald-500/10 text-emerald-500">Active</span>
+                </div>
+                <h3 class="text-xl font-black text-white italic tracking-tighter mb-2">Gmail</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Intercepts email send and delete actions.</p>
+            </div>
+
+            <!-- GitHub -->
+            <div class="glass p-8 rounded-lg border-white/5 hover:border-emerald-500/30 transition-all group">
+                <div class="flex justify-between items-start mb-6">
+                    <div
+                        class="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
+                        <svg viewBox="0 0 24 24" class="w-7 h-7" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
+                                fill="#ffffff" />
+                        </svg>
+                    </div>
+                    <span
+                        class="text-[9px] font-black uppercase px-2 py-1 rounded bg-emerald-500/10 text-emerald-500">Active</span>
+                </div>
+                <h3 class="text-xl font-black text-white italic tracking-tighter mb-2">GitHub</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Guards against force pushes and critical git actions.
+                </p>
+            </div>
+
+            <!-- Google Drive -->
+            <div class="glass p-8 rounded-lg border-white/5 hover:border-emerald-500/30 transition-all group">
+                <div class="flex justify-between items-start mb-6">
+                    <div
+                        class="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
+                        <svg viewBox="0 0 87.3 78" class="w-7 h-7" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L24.8 57.6H0c0 1.55.4 3.1 1.2 4.5z"
+                                fill="#0066DA" />
+                            <path
+                                d="M43.65 25L30.85 2.15c-1.35.8-2.5 1.9-3.3 3.3l-25.1 43.5c-.8 1.35-1.2 2.9-1.2 4.5h24.8z"
+                                fill="#00AC47" />
+                            <path
+                                d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H62.5z"
+                                fill="#EA4335" />
+                            <path d="M43.65 25L56.45 2.15c-1.35-.8-2.9-1.2-4.5-1.2H35.3c-1.55 0-3.1.45-4.5 1.2z"
+                                fill="#00832D" />
+                            <path d="M62.5 57.6H24.8l-10.95 19.2c1.35.8 2.9 1.2 4.5 1.2h50.4c1.55 0 3.1-.45 4.5-1.2z"
+                                fill="#2684FC" />
+                            <path
+                                d="M73.4 26.5l-12.55-21.8c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 62.5 57.6h24.8c0-1.55-.4-3.1-1.2-4.5z"
+                                fill="#FFBA00" />
+                        </svg>
+                    </div>
+                    <span
+                        class="text-[9px] font-black uppercase px-2 py-1 rounded bg-emerald-500/10 text-emerald-500">Active</span>
+                </div>
+                <h3 class="text-xl font-black text-white italic tracking-tighter mb-2">Google Drive</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Monitors file deletion and move operations.</p>
+            </div>
+
+            <!-- Dropbox -->
+            <div class="glass p-8 rounded-lg border-white/5 hover:border-emerald-500/30 transition-all group">
+                <div class="flex justify-between items-start mb-6">
+                    <div
+                        class="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center border border-white/10">
+                        <svg viewBox="0 0 24 24" class="w-7 h-7" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M6 1.807L0 5.629l6 3.822 6.008-3.822L6 1.807zM18 1.807l-6 3.822 6 3.822 6.008-3.822L18 1.807zM0 13.274l6 3.822 6.008-3.822L6 9.452 0 13.274zM18 9.452l-6 3.822 6 3.822 6.008-3.822L18 9.452zM6 18.371l6.008 3.822 6-3.822-6-3.822L6 18.371z"
+                                fill="#0061FF" />
+                        </svg>
+                    </div>
+                    <span
+                        class="text-[9px] font-black uppercase px-2 py-1 rounded bg-emerald-500/10 text-emerald-500">Active</span>
+                </div>
+                <h3 class="text-xl font-black text-white italic tracking-tighter mb-2">Dropbox</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Protects against accidental file and folder deletions.
+                </p>
+            </div>
+
+        </div>
+    </main>
+</body>
+
+</html>
